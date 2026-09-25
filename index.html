@@ -256,7 +256,7 @@
 <script>
     (()=>{
       'use strict';
-      const OA='/api/openai/v1';
+      const OA=(location.hostname==='romastefale.github.io'?'https://pithomate.up.railway.app':'')+'/api/openai/v1';
       const GH='https://api.github.com';
       const USER_KEY='pithomate.githubUser';
       const MCP='https://api.githubcopilot.com/mcp/';
