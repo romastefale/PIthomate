@@ -1,4 +1,4 @@
-import http from "node:http";
+import http from "node:http";\nimport { Readable } from "node:stream";
 import worker from "./dist/server/index.js";
 
 const port = Number(process.env.PORT) || 3000;
@@ -25,7 +25,11 @@ http.createServer(async (req, res) => {
     });
     const output = await worker.fetch(input, process.env);
     res.writeHead(output.status, Object.fromEntries(output.headers));
-    res.end(Buffer.from(await output.arrayBuffer()));
+    if (!output.body) {
+      res.end();
+      return;
+    }
+    Readable.fromWeb(output.body).pipe(res);
   } catch {
     res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
     res.end("Erro interno.");
