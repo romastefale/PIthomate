@@ -1,4 +1,5 @@
-import http from "node:http";\nimport { Readable } from "node:stream";
+import http from "node:http";
+import { Readable } from "node:stream";
 import worker from "./dist/server/index.js";
 
 const port = Number(process.env.PORT) || 3000;
