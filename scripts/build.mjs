@@ -8,5 +8,5 @@ const page = await readFile(resolve(root, "index.html"), "utf8");
 
 await rm(resolve(root, "dist"), { recursive: true, force: true });
 await mkdir(out, { recursive: true });
-await writeFile(resolve(out, "page.js"), `export default ${JSON.stringify(page)};\\n`);
+await writeFile(resolve(out, "page.js"), `export default ${JSON.stringify(page)};\n`);
 await copyFile(resolve(root, "worker/index.js"), resolve(out, "index.js"));
