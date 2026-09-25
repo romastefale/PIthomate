@@ -2,6 +2,22 @@ import page from "./page.js";
 
 const OPENAI_PREFIX = "/api/openai";
 const OPENAI_BASE = "https://api.openai.com";
+const WEB_ORIGIN = "https://romastefale.github.io";
+const RAILWAY_ORIGIN = "https://pithomate.up.railway.app";
+const WEB_ORIGINS = new Set([WEB_ORIGIN, RAILWAY_ORIGIN]);
+
+function cors(request, response) {
+  const origin = request.headers.get("origin");
+  if (!WEB_ORIGINS.has(origin)) return response;
+  const headers = new Headers(response.headers);
+  headers.set("access-control-allow-origin", origin);
+  headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
+  headers.set("access-control-allow-headers", "content-type, openai-beta");
+  headers.set("access-control-expose-headers", "openai-request-id, retry-after, x-should-retry");
+  headers.set("access-control-max-age", "86400");
+  headers.set("vary", headers.has("vary") ? `${headers.get("vary")}, Origin` : "Origin");
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
 
 function json(data, status) {
   return new Response(JSON.stringify(data), {
@@ -88,7 +104,10 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.startsWith(`${OPENAI_PREFIX}/`)) {
-      return proxyOpenAI(request, env);
+      if (request.method === "OPTIONS") {
+        return cors(request, new Response(null, { status: 204 }));
+      }
+      return cors(request, await proxyOpenAI(request, env));
     }
     if (url.pathname === "/" && request.method === "GET") {
       return new Response(page, {
