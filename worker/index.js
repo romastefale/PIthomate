@@ -33,6 +33,7 @@ function allowed(method, path) {
   if (method === "GET" && ["/v1/agents/sessions", "/v1/agents/vaults"].includes(path)) return true;
   if (method === "POST" && path === "/v1/agents/sessions") return true;
   if (method === "GET" && /^\/v1\/agents\/sessions\/[^/]+(?:\/(?:items|turns|artifacts))?$/.test(path)) return true;
+  if (method === "GET" && /^\/v1\/agents\/sessions\/[^/]+\/events$/.test(path)) return true;
   if (method === "GET" && /^\/v1\/agents\/sessions\/[^/]+\/artifacts\/[^/]+\/content$/.test(path)) return true;
   if (method === "POST" && /^\/v1\/agents\/sessions\/[^/]+\/events$/.test(path)) return true;
   if (method === "GET" && /^\/v1\/agents\/vaults\/[^/]+\/credentials$/.test(path)) return true;
@@ -48,14 +49,13 @@ async function proxyOpenAI(request, env) {
   if (!allowed(request.method, path)) return json({ error: { message: "Endpoint não permitido no Pithomate." } }, 404);
   if (request.method === "POST" && /^\/v1\/agents\/sessions\/[^/]+\/events$/.test(path)) {
     let payload;
-    try {
-      payload = await request.clone().json();
-    } catch {
-      return json({ error: { message: "Evento inválido." } }, 400);
-    }
-    if (!Array.isArray(payload?.events) || payload.events.length !== 1 || payload.events[0]?.type !== "agent.session.input.cancel") {
-      return json({ error: { message: "Somente o cancelamento da execução é permitido." } }, 404);
-    }
+    try { payload = await request.clone().json(); }
+    catch { return json({ error: { message: "Evento inválido." } }, 400); }
+    const events = payload?.events;
+    const valid = Array.isArray(events) && events.length === 1 &&
+      (events[0]?.type === "agent.session.input.cancel" ||
+       (events[0]?.type === "agent.session.input.message" && Array.isArray(events[0]?.input)));
+    if (!valid) return json({ error: { message: "Evento da sessão não permitido." } }, 404);
   }
   const apiKey = env?.Chave_SK ?? globalThis.process?.env?.Chave_SK;
   if (typeof apiKey !== "string" || !apiKey.trim()) {
